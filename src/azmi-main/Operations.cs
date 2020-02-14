@@ -8,23 +8,38 @@ using System.Collections.Generic;
 
 namespace azmi_main
 {
+    class AzmiException : Exception
+    {
+        // TODO: Move this to separate folder and file
+        // TODO: Create separate classes for each type of exceptions
+
+        public AzmiException(string identity, Exception ex) :
+            base(ModifyMessage(identity, ex).message, ModifyMessage(identity, ex).ex)
+        {
+        }
+
+        private static (string message, Exception ex) ModifyMessage(string identity, Exception ex)
+        {
+            if (string.IsNullOrEmpty(identity))
+            {
+                return ("Missing identity argument", ex);
+            } else if (ex.Message.Contains("See inner exception for details.")
+                  && (ex.InnerException != null)
+                  && (ex.InnerException.Message.Contains("Identity not found")))
+            {
+                return ("Managed identity not found", ex.InnerException.InnerException);
+            } else
+            {
+                return ("General error", ex);
+            }
+        }
+    }
+
+
+    
     public static class Operations
     {
         // Class defining main operations performed by azmi tool
-
-        private static Exception IdentityError(string identity, Exception ex)
-        {
-            // if no identity, then append identity missing error, otherwise just return existing exception
-            if (string.IsNullOrEmpty(identity)) {
-                return new ArgumentNullException("Missing identity argument", ex);
-            } else if (ex.Message.Contains("See inner exception for details.") 
-                && (ex.InnerException != null) 
-                && (ex.InnerException.Message.Contains("Identity not found"))) {
-                return new ArgumentException("Managed identity not found", ex);
-            } else {
-                return ex;
-            }
-        }
 
         public static string getToken(string endpoint = "management", string identity = null)
         {
@@ -39,7 +54,8 @@ namespace azmi_main
                 return Token.Token;
             } catch (Exception ex)
             {
-                throw IdentityError(identity, ex);
+                //throw IdentityError(identity, ex);
+                throw new AzmiException(identity, ex);
             }
         }
 
@@ -54,7 +70,7 @@ namespace azmi_main
                 return "Success";
             } catch (Exception ex)
             {
-                throw IdentityError(identity, ex);
+                throw new AzmiException(identity, ex);
             }
         }
 
@@ -75,7 +91,7 @@ namespace azmi_main
                 return "Success";
             } catch (Exception ex)
             {
-                throw IdentityError(identity, ex);
+                throw new AzmiException(identity, ex);
             }
         }
 
@@ -95,7 +111,7 @@ namespace azmi_main
                 return blobNamesList.Count == 0 ? null : String.Join("\n", blobNamesList);
             } catch (Exception ex)
             {
-                throw IdentityError(identity, ex);
+                throw new AzmiException(identity, ex);
             }
         }
 
@@ -115,7 +131,7 @@ namespace azmi_main
                 return "Success";
             } catch (Exception ex)
             {
-                throw IdentityError(identity, ex);
+                throw new AzmiException(identity, ex);
             }
         }
     }
